@@ -1,2 +1,2 @@
 # whoami
-Who Am I Applciation to know the device details and features.
+Who Am I application to know the device details and features of the Android device where the app is running.
