@@ -1,10 +1,16 @@
 package com.firebase.io2024.whoami
 
+import android.content.Context
+import android.content.Intent
+import android.hardware.camera2.CameraDevice
+import android.hardware.camera2.CameraManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Spacer
@@ -58,16 +64,28 @@ class MainActivity : ComponentActivity() {
             Spacer(modifier = Modifier.height(32.dp)) // Add space between button and text
             Text(
               text = info,
-              modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f).padding(horizontal = 16.dp),
+              modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.75f)
+                .padding(horizontal = 16.dp),
             )
             Spacer(modifier = Modifier.height(32.dp)) // Add space between button and text
             Button(onClick = { parseContent() }) {
               Text(
-                "Parse Content",
+                "Get Device Name",
                 modifier = Modifier.width(IntrinsicSize.Max),
                 textAlign = TextAlign.Center,
               )
             }
+            Spacer(modifier = Modifier.height(16.dp)) // Add space between button and text
+            Button(onClick = { openCamera() }) {
+              Text(
+                "Open Camera - Who Am I?",
+                modifier = Modifier.width(IntrinsicSize.Max),
+                textAlign = TextAlign.Center,
+              )
+            }
+            Spacer(modifier = Modifier.height(16.dp)) // Add space between button and text
           }
         }
       }
@@ -82,6 +100,39 @@ class MainActivity : ComponentActivity() {
     }
     val jsonObject = JSONObject(jsonText)
     deviceInfo.value = jsonObject.getString("name")
+  }
+
+  private fun openCamera() {
+    if (!Build.MANUFACTURER.equals("Google")) {
+      val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+      startCameraLauncher.launch(cameraIntent)
+    } else {
+      val cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+      val cameraId = cameraManager.cameraIdList[0]
+      val cameraDevice = cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
+        override fun onOpened(camera: CameraDevice) {
+          Log.i("TAG", "Camera successfully opened")
+        }
+
+        override fun onDisconnected(camera: CameraDevice) {
+          Log.i("TAG", "Camera successfully disconnected")
+        }
+
+        override fun onError(camera: CameraDevice, error: Int) {
+          Log.i("TAG", "Camera had an error, retry!")
+        }
+      }, null)
+    }
+
+  }
+
+  private val startCameraLauncher = registerForActivityResult(
+    ActivityResultContracts.StartActivityForResult()
+  ) { result ->
+    if (result.resultCode == RESULT_OK) {
+      // Image captured successfully, handle the image data here
+      val imageUri = result.data?.data ?: return@registerForActivityResult
+    }
   }
 
   private fun promptAi(callback: (Any?) -> Unit) =
@@ -118,10 +169,6 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
           modelName = "gemini-1.0-pro",
           generationConfig = generationConfig { temperature = 0.7f },
         )
-
-      // val result = generativeModel.generateContent("who am i?")
-
-      // Log.i("TAG", "find me:")
     }
   ) {
     Text(text = "Hello $name!", modifier = modifier)
