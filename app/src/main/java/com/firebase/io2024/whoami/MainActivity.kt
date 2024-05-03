@@ -103,6 +103,7 @@ class MainActivity : ComponentActivity() {
   }
 
   private fun openCamera() {
+    Log.i("TAG", "Attempt to open the camera for identifying people")
     if (!Build.MANUFACTURER.equals("Google")) {
       val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
       startCameraLauncher.launch(cameraIntent)
